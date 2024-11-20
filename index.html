@@ -35,17 +35,14 @@
     <div id="markdown-container">Please select a version to load the documentation.</div>
 
     <script>
-        // 버전에 따른 Markdown 파일 경로
         const versionUrls = {
-            "v1.0": "https://raw.githubusercontent.com/<username>/<repository>/main/v1.0-docs/README.md",
-            "v2.0": "https://raw.githubusercontent.com/<username>/<repository>/main/v2.0-docs/README.md"
+            "v1.0": "https://raw.githubusercontent.com/k3255/root/main/MAINTAINERS_v1.0.md",
+            "v2.0": "https://raw.githubusercontent.com/k3255/root/main/MAINTAINERS_v2.0.md"
         };
 
-        // 요소 선택
         const versionSelector = document.getElementById('version-selector');
         const markdownContainer = document.getElementById('markdown-container');
 
-        // Markdown 파일 가져와 렌더링
         function loadMarkdown(version) {
             const url = versionUrls[version];
             if (!url) {
@@ -60,7 +57,6 @@
                     return response.text();
                 })
                 .then(md => {
-                    // Markdown -> HTML 변환
                     markdownContainer.innerHTML = marked(md);
                 })
                 .catch(error => {
@@ -68,14 +64,11 @@
                     markdownContainer.textContent = 'Failed to load documentation.';
                 });
         }
-
-        // 드롭다운 변경 시 이벤트 처리
         versionSelector.addEventListener('change', (event) => {
             const selectedVersion = event.target.value;
             loadMarkdown(selectedVersion);
         });
-
-        // 기본 값으로 첫 번째 버전 로드
+        
         loadMarkdown(versionSelector.value);
     </script>
 </body>
