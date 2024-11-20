@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Viewer with Tables</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -68,7 +68,9 @@
                     return response.text();
                 })
                 .then(md => {
-                    markdownContainer.innerHTML = marked(md);
+                    const converter = new showdown.Converter();
+                    const html = converter.makeHtml(md);
+                    markdownContainer.innerHTML = html;
                 })
                 .catch(error => {
                     console.error('Error loading Markdown file:', error);
@@ -80,6 +82,7 @@
             const selectedVersion = event.target.value;
             loadMarkdown(selectedVersion);
         });
+
         loadMarkdown(versionSelector.value);
     </script>
 </body>
