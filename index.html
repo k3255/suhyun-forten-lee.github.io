@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Versions</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -57,7 +58,7 @@
                     return response.text();
                 })
                 .then(md => {
-                    markdownContainer.innerHTML = marked(md);
+                    markdownContainer.innerHTML = marked.parse(md);
                 })
                 .catch(error => {
                     console.error('Error loading Markdown file:', error);
@@ -70,6 +71,8 @@
         });
         
         loadMarkdown(versionSelector.value);
+
+        
     </script>
 </body>
 </html>
