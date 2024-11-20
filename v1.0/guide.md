@@ -1,8 +1,6 @@
 
 ---
 
-### **3. `v1.0/guide.md` (v1.0의 추가 문서)**
-
 ```markdown
 # v1.0 Guide
 
