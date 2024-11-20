@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Test</title>
+    <title>Dynamic Branch Viewer</title>
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
         body {
@@ -13,7 +13,8 @@
         h1 {
             color: #2c3e50;
         }
-        #version-selector {
+        select {
+            margin-right: 10px;
             margin-bottom: 20px;
         }
         #markdown-container {
@@ -38,52 +39,72 @@
 </head>
 <body>
     <h1>문서관리 테스트</h1>
-    <label for="version-selector">버전 :</label>
-    <select id="version-selector">
-        <option value="v1.0">Version 1.0</option>
-        <option value="v2.0">Version 2.0</option>
-    </select>
-    <div id="markdown-container">Please select a version to load the documentation.</div>
+    <label for="version-selector">Select Branch:</label>
+    <select id="version-selector"></select>
+    <div id="markdown-container">Please select a branch to load the documentation.</div>
 
     <script>
-        const versionUrls = {
-            "v1.0": "https://raw.githubusercontent.com/k3255/root/main/MAINTAINERS_v1.0.md",
-            "v2.0": "https://raw.githubusercontent.com/k3255/root/main/MAINTAINERS_v2.0.md"
-        };
-
-        const versionSelector = document.getElementById('version-selector');
+        const repoOwner = "k3255";
+        const repoName = "root";
         const markdownContainer = document.getElementById('markdown-container');
+        const versionSelector = document.getElementById('version-selector');
 
-        function loadMarkdown(version) {
-            const url = versionUrls[version];
-            if (!url) {
-                markdownContainer.textContent = 'Invalid version selected.';
-                return;
+        async function fetchBranches() {
+            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch branches: ${response.status}`);
+                }
+                const branches = await response.json();
+                return branches.map(branch => branch.name); // Extract branch names
+            } catch (error) {
+                console.error('Error fetching branches:', error);
+                markdownContainer.textContent = 'Failed to fetch branches.';
+                return [];
             }
+        }
 
+        function loadMarkdown(branch) {
+            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/MAINTAINERS.md`;
             markdownContainer.textContent = 'Loading...';
+
             fetch(url)
                 .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) throw new Error(`Failed to load markdown: ${response.status}`);
                     return response.text();
                 })
                 .then(md => {
-                    const converter = new showdown.Converter({tables: true});
+                    const converter = new showdown.Converter({ tables: true });
                     const html = converter.makeHtml(md);
                     markdownContainer.innerHTML = html;
                 })
                 .catch(error => {
-                    console.error('Error loading Markdown file:', error);
+                    console.error('Error loading markdown:', error);
                     markdownContainer.textContent = 'Failed to load documentation.';
                 });
         }
 
-        versionSelector.addEventListener('change', (event) => {
-            const selectedVersion = event.target.value;
-            loadMarkdown(selectedVersion);
-        });
+        async function initialize() {
+            const branches = await fetchBranches();
 
-        loadMarkdown(versionSelector.value);
+            if (branches.length > 0) {
+                branches.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch;
+                    option.textContent = branch;
+                    versionSelector.appendChild(option);
+                });
+                loadMarkdown(branches[0]);
+                versionSelector.addEventListener('change', (event) => {
+                    loadMarkdown(event.target.value);
+                });
+            } else {
+                markdownContainer.textContent = 'No branches found.';
+            }
+        }
+        initialize();
     </script>
 </body>
 </html>
