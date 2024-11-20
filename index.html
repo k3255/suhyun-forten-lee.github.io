@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Raw Viewer</title>
+    <title>Document Viewer with Tables</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,14 +22,22 @@
             padding: 20px;
             border-radius: 5px;
             background: #f9f9f9;
-            white-space: pre-wrap; /* Preserve whitespace and line breaks */
-            font-family: monospace; /* Use monospace font for code */
-            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
         }
     </style>
 </head>
 <body>
-    <h1>Markdown Raw Viewer</h1>
+    <h1>Document Viewer with Tables</h1>
     <label for="version-selector">Select a version:</label>
     <select id="version-selector">
         <option value="v1.0">Version 1.0</option>
@@ -45,7 +54,7 @@
         const versionSelector = document.getElementById('version-selector');
         const markdownContainer = document.getElementById('markdown-container');
 
-        function loadMarkdownRaw(version) {
+        function loadMarkdown(version) {
             const url = versionUrls[version];
             if (!url) {
                 markdownContainer.textContent = 'Invalid version selected.';
@@ -59,7 +68,7 @@
                     return response.text();
                 })
                 .then(md => {
-                    markdownContainer.textContent = md;
+                    markdownContainer.innerHTML = marked(md);
                 })
                 .catch(error => {
                     console.error('Error loading Markdown file:', error);
@@ -69,10 +78,9 @@
 
         versionSelector.addEventListener('change', (event) => {
             const selectedVersion = event.target.value;
-            loadMarkdownRaw(selectedVersion);
+            loadMarkdown(selectedVersion);
         });
-
-        loadMarkdownRaw(versionSelector.value);
+        loadMarkdown(versionSelector.value);
     </script>
 </body>
 </html>
