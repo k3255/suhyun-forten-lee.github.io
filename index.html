@@ -62,6 +62,8 @@
 </head>
 <body>
     <div class="sidebar">
+        <h2>Version</h2>
+        <select id="version-selector"></select>
         <h2>Documents</h2>
         <ul id="document-list"></ul>
     </div>
@@ -73,14 +75,24 @@
     <script>
         const repoOwner = "k3255";
         const repoName = "root";
-        const documents = [
-            { branch: "v1.0", file: "MAINTAINERS.md", title: "Maintainers (v1.0)" },
-            { branch: "v2.0", file: "MAINTAINERS.md", title: "Maintainers (v2.0)" },
-            { branch: "v1.0", file: "README.md", title: "README (v1.0)" },
-            { branch: "v2.0", file: "README.md", title: "README (v2.0)" }
-        ];
         const documentList = document.getElementById("document-list");
         const markdownContainer = document.getElementById("markdown-container");
+        const versionSelector = document.getElementById("version-selector");
+
+        const files = ["MAINTAINERS.md", "README.md"]; // 추가하려는 파일 목록
+
+        async function fetchBranches() {
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch branches: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching branches:', error);
+                markdownContainer.textContent = 'Failed to load branch information.';
+                return [];
+            }
+        }
 
         function loadMarkdown(branch, file) {
             const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
@@ -102,18 +114,37 @@
                 });
         }
 
-        function initialize() {
-            documents.forEach(doc => {
+        function populateDocumentList(branch) {
+            documentList.innerHTML = ""; // Clear the list
+            files.forEach(file => {
                 const li = document.createElement("li");
                 const link = document.createElement("a");
-                link.textContent = doc.title;
+                link.textContent = file;
                 link.href = "#";
-                link.addEventListener("click", () => loadMarkdown(doc.branch, doc.file));
+                link.addEventListener("click", () => loadMarkdown(branch, file));
                 li.appendChild(link);
                 documentList.appendChild(li);
             });
         }
 
+        async function initialize() {
+            const branches = await fetchBranches();
+            if (branches.length === 0) return;
+
+            branches.forEach(branch => {
+                const option = document.createElement("option");
+                option.value = branch.name;
+                option.textContent = branch.name;
+                versionSelector.appendChild(option);
+            });
+
+            const defaultBranch = branches[0].name;
+            versionSelector.value = defaultBranch;
+            populateDocumentList(defaultBranch);
+            versionSelector.addEventListener("change", (event) => {
+                populateDocumentList(event.target.value);
+            });
+        }
         initialize();
     </script>
 </body>
