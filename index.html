@@ -4,21 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Versions</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #2c3e50; }
-        ul { list-style: none; padding: 0; }
-        li { margin: 10px 0; }
-        a { text-decoration: none; color: #3498db; }
-        a:hover { text-decoration: underline; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        #version-selector {
+            margin-bottom: 20px;
+        }
+        #markdown-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
     </style>
 </head>
 <body>
-    <h1>Welcome to Document Versions</h1>
-    <p>Select a version to view the documentation:</p>
-    <ul>
-        <li><a href="v1.0/">Version 1.0</a></li>
-        <li><a href="v2.0/">Version 2.0</a></li>
-    </ul>
+    <h1>Document Viewer</h1>
+    <label for="version-selector">Select a version:</label>
+    <select id="version-selector">
+        <option value="v1.0">Version 1.0</option>
+        <option value="v2.0">Version 2.0</option>
+    </select>
+    <div id="markdown-container">Please select a version to load the documentation.</div>
+
+    <script>
+        // 버전에 따른 Markdown 파일 경로
+        const versionUrls = {
+            "v1.0": "https://raw.githubusercontent.com/<username>/<repository>/main/v1.0-docs/README.md",
+            "v2.0": "https://raw.githubusercontent.com/<username>/<repository>/main/v2.0-docs/README.md"
+        };
+
+        // 요소 선택
+        const versionSelector = document.getElementById('version-selector');
+        const markdownContainer = document.getElementById('markdown-container');
+
+        // Markdown 파일 가져와 렌더링
+        function loadMarkdown(version) {
+            const url = versionUrls[version];
+            if (!url) {
+                markdownContainer.textContent = 'Invalid version selected.';
+                return;
+            }
+
+            markdownContainer.textContent = 'Loading...';
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.text();
+                })
+                .then(md => {
+                    // Markdown -> HTML 변환
+                    markdownContainer.innerHTML = marked(md);
+                })
+                .catch(error => {
+                    console.error('Error loading Markdown file:', error);
+                    markdownContainer.textContent = 'Failed to load documentation.';
+                });
+        }
+
+        // 드롭다운 변경 시 이벤트 처리
+        versionSelector.addEventListener('change', (event) => {
+            const selectedVersion = event.target.value;
+            loadMarkdown(selectedVersion);
+        });
+
+        // 기본 값으로 첫 번째 버전 로드
+        loadMarkdown(versionSelector.value);
+    </script>
 </body>
 </html>
