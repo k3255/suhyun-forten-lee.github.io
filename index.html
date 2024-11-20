@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Versions</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    
+    <title>Markdown Raw Viewer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,11 +21,14 @@
             padding: 20px;
             border-radius: 5px;
             background: #f9f9f9;
+            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+            font-family: monospace; /* Use monospace font for code */
+            color: #2c3e50;
         }
     </style>
 </head>
 <body>
-    <h1>Document Viewer</h1>
+    <h1>Markdown Raw Viewer</h1>
     <label for="version-selector">Select a version:</label>
     <select id="version-selector">
         <option value="v1.0">Version 1.0</option>
@@ -44,7 +45,7 @@
         const versionSelector = document.getElementById('version-selector');
         const markdownContainer = document.getElementById('markdown-container');
 
-        function loadMarkdown(version) {
+        function loadMarkdownRaw(version) {
             const url = versionUrls[version];
             if (!url) {
                 markdownContainer.textContent = 'Invalid version selected.';
@@ -58,21 +59,20 @@
                     return response.text();
                 })
                 .then(md => {
-                    markdownContainer.innerHTML = marked.parse(md);
+                    markdownContainer.textContent = md;
                 })
                 .catch(error => {
                     console.error('Error loading Markdown file:', error);
                     markdownContainer.textContent = 'Failed to load documentation.';
                 });
         }
+
         versionSelector.addEventListener('change', (event) => {
             const selectedVersion = event.target.value;
-            loadMarkdown(selectedVersion);
+            loadMarkdownRaw(selectedVersion);
         });
-        
-        loadMarkdown(versionSelector.value);
 
-        
+        loadMarkdownRaw(versionSelector.value);
     </script>
 </body>
 </html>
