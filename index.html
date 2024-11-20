@@ -3,19 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Branch Viewer</title>
+    <title>문서관리 테스트</title>
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f4f4f4;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            height: 100vh;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
         }
         h1 {
             color: #2c3e50;
         }
-        select {
-            margin-right: 10px;
-            margin-bottom: 20px;
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            margin: 10px 0;
+        }
+        ul li a {
+            text-decoration: none;
+            color: #3498db;
+            cursor: pointer;
+        }
+        ul li a:hover {
+            text-decoration: underline;
         }
         #markdown-container {
             margin-top: 20px;
@@ -38,36 +61,29 @@
     </style>
 </head>
 <body>
-    <h1>문서관리 테스트</h1>
-    <label for="version-selector">Select Branch:</label>
-    <select id="version-selector"></select>
-    <div id="markdown-container">Please select a branch to load the documentation.</div>
+    <div class="sidebar">
+        <h2>Documents</h2>
+        <ul id="document-list"></ul>
+    </div>
+    <div class="content">
+        <h1>문서관리 테스트</h1>
+        <div id="markdown-container">Please select a document from the list.</div>
+    </div>
 
     <script>
         const repoOwner = "k3255";
         const repoName = "root";
-        const markdownContainer = document.getElementById('markdown-container');
-        const versionSelector = document.getElementById('version-selector');
+        const documents = [
+            { branch: "v1.0", file: "MAINTAINERS.md", title: "Maintainers (v1.0)" },
+            { branch: "v2.0", file: "MAINTAINERS.md", title: "Maintainers (v2.0)" },
+            { branch: "v1.0", file: "README.md", title: "README (v1.0)" },
+            { branch: "v2.0", file: "README.md", title: "README (v2.0)" }
+        ];
+        const documentList = document.getElementById("document-list");
+        const markdownContainer = document.getElementById("markdown-container");
 
-        async function fetchBranches() {
-            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch branches: ${response.status}`);
-                }
-                const branches = await response.json();
-                return branches.map(branch => branch.name); // Extract branch names
-            } catch (error) {
-                console.error('Error fetching branches:', error);
-                markdownContainer.textContent = 'Failed to fetch branches.';
-                return [];
-            }
-        }
-
-        function loadMarkdown(branch) {
-            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/MAINTAINERS.md`;
+        function loadMarkdown(branch, file) {
+            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
             markdownContainer.textContent = 'Loading...';
 
             fetch(url)
@@ -86,24 +102,18 @@
                 });
         }
 
-        async function initialize() {
-            const branches = await fetchBranches();
-
-            if (branches.length > 0) {
-                branches.forEach(branch => {
-                    const option = document.createElement('option');
-                    option.value = branch;
-                    option.textContent = branch;
-                    versionSelector.appendChild(option);
-                });
-                loadMarkdown(branches[0]);
-                versionSelector.addEventListener('change', (event) => {
-                    loadMarkdown(event.target.value);
-                });
-            } else {
-                markdownContainer.textContent = 'No branches found.';
-            }
+        function initialize() {
+            documents.forEach(doc => {
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+                link.textContent = doc.title;
+                link.href = "#";
+                link.addEventListener("click", () => loadMarkdown(doc.branch, doc.file));
+                li.appendChild(link);
+                documentList.appendChild(li);
+            });
         }
+
         initialize();
     </script>
 </body>
