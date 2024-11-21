@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,6 +22,14 @@
         .content {
             flex: 1;
             padding: 20px;
+        }
+        .toc-sidebar {
+            width: 200px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            height: 100vh;
+            overflow-y: auto;
         }
         h1 {
             color: #2c3e50;
@@ -48,6 +56,27 @@
             border-radius: 5px;
             background: #f9f9f9;
         }
+        #markdown-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+        }
+        #markdown-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        #markdown-container table, 
+        #markdown-container th, 
+        #markdown-container td {
+            border: 1px solid #ddd;
+        }
+        #markdown-container th, 
+        #markdown-container td {
+            padding: 8px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -59,7 +88,11 @@
     </div>
     <div class="content">
         <h1>문서관리 테스트</h1>
-        <div id="markdown-container">선택</div>
+        <div id="markdown-container">Please select a document from the list.</div>
+    </div>
+    <div class="toc-sidebar">
+        <h2>Table of Contents</h2>
+        <ul id="toc-list"></ul>
     </div>
 
     <script>
@@ -67,6 +100,7 @@
         const repoName = "did-doc-architecture";
         const documentList = document.getElementById("document-list");
         const markdownContainer = document.getElementById("markdown-container");
+        const tocList = document.getElementById("toc-list");
         const versionSelector = document.getElementById("version-selector");
 
         async function fetchBranches() {
@@ -102,8 +136,8 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
                 const content = await response.text();
-                const titleMatch = content.match(/^#\s(.+)/m);
-                return titleMatch ? titleMatch[1] : filePath;
+                const titleMatch = content.match(/^#\s(.+)/m); // Match the first Markdown title (# Title)
+                return titleMatch ? titleMatch[1] : filePath; // Return title or file path if no title
             } catch (error) {
                 console.error(`Error fetching file title (${filePath}):`, error);
                 return filePath;
@@ -111,7 +145,7 @@
         }
 
         async function populateDocumentList(branch) {
-            documentList.innerHTML = "";
+            documentList.innerHTML = ""; // Clear the list
             const files = await fetchMarkdownFiles(branch);
 
             const folders = {};
@@ -155,11 +189,51 @@
                     const converter = new showdown.Converter({ tables: true });
                     const html = converter.makeHtml(md);
                     markdownContainer.innerHTML = html;
+
+                    // Update image sources for relative paths
+                    const images = markdownContainer.querySelectorAll("img");
+                    images.forEach(img => {
+                        const src = img.getAttribute("src");
+                        if (!src.startsWith("http")) {
+                            const fullPath = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${src}`;
+                            img.setAttribute("src", fullPath);
+                        }
+                    });
+
+                    // Generate Table of Contents
+                    generateTOC(md);
                 })
                 .catch(error => {
                     console.error('Error loading markdown:', error);
                     markdownContainer.textContent = 'Failed to load documentation.';
                 });
+        }
+
+        function generateTOC(md) {
+            tocList.innerHTML = ""; // Clear the TOC
+            const headings = md.match(/^#{1,6}\s.+/gm); // Match all headings (#, ##, ###, etc.)
+            if (!headings) return;
+
+            headings.forEach(heading => {
+                const level = heading.match(/^#{1,6}/)[0].length; // Count # to determine level
+                const text = heading.replace(/^#{1,6}\s/, ""); // Remove # and spaces
+                const id = text.toLowerCase().replace(/[^\w]+/g, "-"); // Generate id for anchor link
+
+                const li = document.createElement("li");
+                li.style.marginLeft = `${(level - 1) * 20}px`; // Indent based on level
+
+                const link = document.createElement("a");
+                link.textContent = text;
+                link.href = `#${id}`;
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const target = document.getElementById(id);
+                    if (target) target.scrollIntoView({ behavior: "smooth" });
+                });
+
+                li.appendChild(link);
+                tocList.appendChild(li);
+            });
         }
 
         async function initialize() {
