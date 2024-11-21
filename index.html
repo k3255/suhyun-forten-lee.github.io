@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -111,7 +111,7 @@
         }
 
         async function populateDocumentList(branch) {
-            documentList.innerHTML = ""; // Clear the list
+            documentList.innerHTML = "";
             const files = await fetchMarkdownFiles(branch);
 
             const folders = {};
