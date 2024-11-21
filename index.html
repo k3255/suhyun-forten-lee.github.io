@@ -125,8 +125,7 @@
                 return data.tree.filter(item =>
                     item.type === "blob" &&
                     item.path.endsWith(".md") &&
-                    !item.path.startsWith("root/") &&
-                    !item.path.startsWith(".github/")
+                    item.path.startsWith("docs/")
                 );
             } catch (error) {
                 console.error('Error fetching markdown files:', error);
@@ -141,43 +140,27 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
                 const content = await response.text();
-                const titleMatch = content.match(/^#\s(.+)/m); // Match the first Markdown title (# Title)
-                return titleMatch ? titleMatch[1] : filePath; // Return title or file path if no title
+                const titleMatch = content.match(/^#\s(.+)/m);
+                return titleMatch ? titleMatch[1] : filePath.split('/').pop();
             } catch (error) {
                 console.error(`Error fetching file title (${filePath}):`, error);
-                return filePath;
+                return filePath.split('/').pop();
             }
         }
 
         async function populateDocumentList(branch) {
-            documentList.innerHTML = ""; // Clear the list
+            documentList.innerHTML = "";
             const files = await fetchMarkdownFiles(branch);
 
-            const folders = {};
             for (const file of files) {
-                const [folder, fileName] = file.path.includes("/") ? file.path.split("/", 2) : ["", file.path];
-                if (!folders[folder]) folders[folder] = [];
-                folders[folder].push(file);
-            }
-
-            for (const folder in folders) {
-                const folderLi = document.createElement("li");
-                folderLi.textContent = folder || "Root";
-                const folderUl = document.createElement("ul");
-
-                for (const file of folders[folder]) {
-                    const fileTitle = await fetchFileTitle(branch, file.path);
-                    const fileLi = document.createElement("li");
-                    const fileLink = document.createElement("a");
-                    fileLink.textContent = fileTitle;
-                    fileLink.href = "#";
-                    fileLink.addEventListener("click", () => loadMarkdown(branch, file.path));
-                    fileLi.appendChild(fileLink);
-                    folderUl.appendChild(fileLi);
-                }
-
-                folderLi.appendChild(folderUl);
-                documentList.appendChild(folderLi);
+                const fileTitle = await fetchFileTitle(branch, file.path);
+                const fileLi = document.createElement("li");
+                const fileLink = document.createElement("a");
+                fileLink.textContent = fileTitle;
+                fileLink.href = "#";
+                fileLink.addEventListener("click", () => loadMarkdown(branch, file.path));
+                fileLi.appendChild(fileLink);
+                documentList.appendChild(fileLi);
             }
         }
 
@@ -195,18 +178,16 @@
                     const html = converter.makeHtml(md);
                     markdownContainer.innerHTML = html;
 
-                    // Update image sources for relative paths
                     const images = markdownContainer.querySelectorAll("img");
                     images.forEach(img => {
                         const src = img.getAttribute("src");
                         if (src && !src.startsWith("http")) {
-                            const fullPath = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${src}`;
+                            const fullPath = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file.substring(0, file.lastIndexOf("/") + 1)}${src}`;
                             img.setAttribute("src", fullPath);
                         }
                     });
 
-                    // Generate Table of Contents
-                    generateTOC(md, branch);
+                    generateTOC();
                 })
                 .catch(error => {
                     console.error('Error loading markdown:', error);
@@ -214,30 +195,22 @@
                 });
         }
 
-        function generateTOC(md, branch) {
-            tocList.innerHTML = ""; // Clear the TOC
-            markdownContainer.innerHTML = markdownContainer.innerHTML.replace(/<h([1-6])>([^<]*)<\/h\1>/g, function(match, level, text) {
-                const id = text.toLowerCase().replace(/[^\w]+/g, "-");
-                return `<h${level} id="${id}">${text}</h${level}>`;
-            });
-
-            const headings = md.match(/^#{1,6}\s.+/gm); // Match all headings (#, ##, ###, etc.)
-            if (!headings) return;
-
+        function generateTOC() {
+            tocList.innerHTML = "";
+            const headings = markdownContainer.querySelectorAll("h1, h2, h3, h4, h5, h6");
             headings.forEach(heading => {
-                const level = heading.match(/^#{1,6}/)[0].length; // Count # to determine level
-                const text = heading.replace(/^#{1,6}\s/, ""); // Remove # and spaces
-                const id = text.toLowerCase().replace(/[^\w]+/g, "-"); // Generate id for anchor link
+                const level = parseInt(heading.tagName.substring(1));
+                const id = heading.textContent.toLowerCase().replace(/[^\w]+/g, "-");
+                heading.id = id;
 
                 const li = document.createElement("li");
-                li.style.marginLeft = `${(level - 1) * 20}px`; // Indent based on level
+                li.style.marginLeft = `${(level - 1) * 20}px`;
                 const link = document.createElement("a");
-                link.textContent = text;
+                link.textContent = heading.textContent;
                 link.href = `#${id}`;
                 link.addEventListener("click", (e) => {
                     e.preventDefault();
-                    const target = document.getElementById(id);
-                    if (target) target.scrollIntoView({ behavior: "smooth" });
+                    heading.scrollIntoView({ behavior: "smooth" });
                 });
                 li.appendChild(link);
                 tocList.appendChild(li);
