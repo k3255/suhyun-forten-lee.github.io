@@ -88,7 +88,7 @@
     </div>
     <div class="content">
         <h1>문서관리 테스트</h1>
-        <div id="markdown-container">문서 선택</div>
+        <div id="markdown-container">Please select a document from the list.</div>
     </div>
     <div class="toc-sidebar">
         <h2>Table of Contents</h2>
@@ -96,8 +96,8 @@
     </div>
 
     <script>
-        const repoOwner = "OmniOneID";
-        const repoName = "did-doc-architecture";
+        const repoOwner = "k3255";
+        const repoName = "root";
         const documentList = document.getElementById("document-list");
         const markdownContainer = document.getElementById("markdown-container");
         const tocList = document.getElementById("toc-list");
@@ -141,8 +141,8 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
                 const content = await response.text();
-                const titleMatch = content.match(/^#\s(.+)/m);
-                return titleMatch ? titleMatch[1] : filePath;
+                const titleMatch = content.match(/^#\s(.+)/m); // Match the first Markdown title (# Title)
+                return titleMatch ? titleMatch[1] : filePath; // Return title or file path if no title
             } catch (error) {
                 console.error(`Error fetching file title (${filePath}):`, error);
                 return filePath;
@@ -150,7 +150,7 @@
         }
 
         async function populateDocumentList(branch) {
-            documentList.innerHTML = "";
+            documentList.innerHTML = ""; // Clear the list
             const files = await fetchMarkdownFiles(branch);
 
             const folders = {};
@@ -195,6 +195,7 @@
                     const html = converter.makeHtml(md);
                     markdownContainer.innerHTML = html;
 
+                    // Update image sources for relative paths
                     const images = markdownContainer.querySelectorAll("img");
                     images.forEach(img => {
                         const src = img.getAttribute("src");
@@ -204,7 +205,8 @@
                         }
                     });
 
-                    generateTOC(md);
+                    // Generate Table of Contents
+                    generateTOC(md, branch);
                 })
                 .catch(error => {
                     console.error('Error loading markdown:', error);
@@ -212,19 +214,23 @@
                 });
         }
 
-        function generateTOC(md) {
-            tocList.innerHTML = "";
-            const headings = md.match(/^#{1,6}\s.+/gm);
+        function generateTOC(md, branch) {
+            tocList.innerHTML = ""; // Clear the TOC
+            markdownContainer.innerHTML = markdownContainer.innerHTML.replace(/<h([1-6])>([^<]*)<\/h\1>/g, function(match, level, text) {
+                const id = text.toLowerCase().replace(/[^\w]+/g, "-");
+                return `<h${level} id="${id}">${text}</h${level}>`;
+            });
+
+            const headings = md.match(/^#{1,6}\s.+/gm); // Match all headings (#, ##, ###, etc.)
             if (!headings) return;
 
             headings.forEach(heading => {
-                const level = heading.match(/^#{1,6}/)[0].length;
-                const text = heading.replace(/^#{1,6}\s/, "");
-                const id = text.toLowerCase().replace(/[^\w]+/g, "-");
+                const level = heading.match(/^#{1,6}/)[0].length; // Count # to determine level
+                const text = heading.replace(/^#{1,6}\s/, ""); // Remove # and spaces
+                const id = text.toLowerCase().replace(/[^\w]+/g, "-"); // Generate id for anchor link
 
                 const li = document.createElement("li");
-                li.style.marginLeft = `${(level - 1) * 20}px`;
-
+                li.style.marginLeft = `${(level - 1) * 20}px`; // Indent based on level
                 const link = document.createElement("a");
                 link.textContent = text;
                 link.href = `#${id}`;
@@ -233,7 +239,6 @@
                     const target = document.getElementById(id);
                     if (target) target.scrollIntoView({ behavior: "smooth" });
                 });
-
                 li.appendChild(link);
                 tocList.appendChild(li);
             });
