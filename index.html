@@ -141,12 +141,21 @@
                 if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
                 const content = await response.text();
                 const titleMatch = content.match(/^#\s(.+)/m);
-                return titleMatch ? titleMatch[1] : filePath.split('/').pop();
+                let title = titleMatch ? titleMatch[1] : decodeURIComponent(filePath.split("/").pop().replace(/_/g, " "));
+                if (filePath.includes("_ko")) {
+                    title += " (한글)";
+                }
+                return title;
             } catch (error) {
                 console.error(`Error fetching file title (${filePath}):`, error);
-                return filePath.split('/').pop();
+                let title = decodeURIComponent(filePath.split("/").pop().replace(/_/g, " "));
+                if (filePath.includes("_ko")) {
+                    title += " (한글)";
+                }
+                return title;
             }
         }
+
 
         async function populateDocumentList(branch) {
             documentList.innerHTML = "";
