@@ -141,20 +141,21 @@
                 if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
                 const content = await response.text();
                 const titleMatch = content.match(/^#\s(.+)/m);
-                let title = titleMatch ? titleMatch[1] : decodeURIComponent(filePath.split("/").pop().replace(/_/g, " "));
-                if (filePath.includes("_ko")) {
+                let title = titleMatch ? titleMatch[1] : decodeURIComponent(filePath.split("/").pop().replace(/\.md$/i, "").replace(/_/g, " "));
+                if (filePath.toLowerCase().includes("_ko")) {
                     title = title.replace(/_ko/i, "").trim() + " (한글)";
                 }
                 return title;
             } catch (error) {
                 console.error(`Error fetching file title (${filePath}):`, error);
-                let title = decodeURIComponent(filePath.split("/").pop().replace(/_/g, " "));
-                if (filePath.includes("_ko")) {
+                let title = decodeURIComponent(filePath.split("/").pop().replace(/\.md$/i, "").replace(/_/g, " "));
+                if (filePath.toLowerCase().includes("_ko")) {
                     title = title.replace(/_ko/i, "").trim() + " (한글)";
                 }
                 return title;
             }
         }
+
 
         async function populateDocumentList(branch) {
             documentList.innerHTML = "";
