@@ -129,9 +129,17 @@
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
+
+        <h2>Language</h2>
+        <select id="language-selector">
+            <option value="en">English</option>
+            <option value="ko">한글</option>
+        </select>
+
         <h2>Documents</h2>
         <ul id="document-list"></ul>
     </div>
+
     <div class="content">
         <h1>문서관리 테스트</h1>
         <div id="markdown-container">문서를 선택해주세요</div>
@@ -151,6 +159,9 @@
         const markdownContainer = document.getElementById("markdown-container");
         const tocList = document.getElementById("toc-list");
         const versionSelector = document.getElementById("version-selector");
+        const languageSelector = document.getElementById("language-selector");
+
+        let selectedLanguage = 'en';
 
         async function fetchBranches() {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
@@ -205,69 +216,55 @@
             }
         }
 
-        async function populateDocumentList(branch) {
-            documentList.innerHTML = "";
-            const files = await fetchMarkdownFiles(branch);
+        function createFolderTree(files) {
+            const fileMap = {};
 
-            for (const file of files) {
-                const fileTitle = await fetchFileTitle(branch, file.path);
-                const fileLi = document.createElement("li");
-                const fileLink = document.createElement("a");
-                fileLink.textContent = fileTitle;
-                fileLink.href = "#";
-                fileLink.addEventListener("click", () => loadMarkdown(branch, file.path));
-                fileLi.appendChild(fileLink);
-                documentList.appendChild(fileLi);
-            }
-        }
+            files.forEach(file => {
+                const folder = file.path.substring(0, file.path.lastIndexOf("/"));
+                if (!fileMap[folder]) {
+                    fileMap[folder] = [];
+                }
+                fileMap[folder].push(file);
+            });
 
-        function loadMarkdown(branch, file) {
-            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
-            markdownContainer.textContent = 'Loading...';
+            const createFolderElement = (folder, files) => {
+                const folderLi = document.createElement("li");
+                folderLi.classList.add("folder");
 
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error(`Failed to load markdown: ${response.status}`);
-                    return response.text();
-                })
-                .then(md => {
-                    const converter = new showdown.Converter({ tables: true });
-                    const html = converter.makeHtml(md);
-                    markdownContainer.innerHTML = html;
+                const folderLink = document.createElement("a");
+                folderLink.textContent = folder;
+                folderLink.href = "#";
+                folderLink.onclick = (e) => {
+                    e.preventDefault();
+                    const subList = folderLi.querySelector("ul");
+                    subList.style.display = subList.style.display === "none" ? "block" : "none";
+                };
+                folderLi.appendChild(folderLink);
 
-                    const images = markdownContainer.querySelectorAll("img");
-                    images.forEach(img => {
-                        const src = img.getAttribute("src");
-                        if (src && !src.startsWith("http")) {
-                            const fullPath = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file.substring(0, file.lastIndexOf("/") + 1)}${src}`;
-                            img.setAttribute("src", fullPath);
-                        }
-                    });
+                const subList = document.createElement("ul");
+                subList.style.display = "none";
 
-                    generateTOC();
-                })
-                .catch(error => {
-                    console.error('Error loading markdown:', error);
-                    markdownContainer.textContent = 'Failed to load the content.';
+                files.forEach(file => {
+                    const fileLi = document.createElement("li");
+                    const fileLink = document.createElement("a");
+                    fileLink.textContent = file.path.split("/").pop().replace(/_/g, " ");
+                    fileLink.href = `#${file.path}`;
+                    subList.appendChild(fileLi);
                 });
-        }
 
-        function generateTOC() {
-            const headings = markdownContainer.querySelectorAll("h2, h3, h4, h5, h6");
-            tocList.innerHTML = "";
-            headings.forEach(heading => {
-                const tocItem = document.createElement("li");
-                const tocLink = document.createElement("a");
-                tocLink.textContent = heading.textContent;
-                tocLink.href = `#${heading.id}`;
-                tocItem.appendChild(tocLink);
-                tocList.appendChild(tocItem);
+                folderLi.appendChild(subList);
+                return folderLi;
+            };
+
+            Object.keys(fileMap).forEach(folder => {
+                const folderLi = createFolderElement(folder, fileMap[folder]);
+                documentList.appendChild(folderLi);
             });
         }
 
-        function toggleSidebar(sidebar) {
-            const element = document.querySelector(`.${sidebar}`);
-            element.classList.toggle("active");
+        async function populateDocumentList(branch) {
+            const markdownFiles = await fetchMarkdownFiles(branch);
+            createFolderTree(markdownFiles);
         }
 
         async function init() {
@@ -277,6 +274,10 @@
                 populateDocumentList(defaultBranch);
                 versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join('');
             }
+
+            languageSelector.addEventListener('change', (e) => {
+                selectedLanguage = e.target.value;
+            });
         }
 
         init();
