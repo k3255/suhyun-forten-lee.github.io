@@ -230,9 +230,9 @@
                     const fileLink = document.createElement("a");
                     fileLink.textContent = fileTitle;
                     fileLink.href = "#";
-                    fileLink.addEventListener("click", async (e) => {
+                    fileLink.addEventListener("click", (e) => {
                         e.preventDefault();
-                        await renderMarkdown(file.path);
+                        renderMarkdown(file.path);
                     });
                     fileLi.appendChild(fileLink);
                     subList.appendChild(fileLi);
