@@ -8,99 +8,51 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
             display: flex;
+            flex-wrap: wrap;
         }
         .sidebar, .toc-sidebar {
-            background-color: #f4f4f4;
+            width: 25%;
             padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            height: 100vh;
-            overflow-y: auto;
+            box-sizing: border-box;
         }
         .content {
-            flex: 1;
+            flex-grow: 1;
             padding: 20px;
+            box-sizing: border-box;
         }
-        h1 {
-            color: #2c3e50;
+        .sidebar ul {
+            list-style: none;
+            padding-left: 0;
         }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        ul li {
-            margin: 5px 0;
-        }
-        ul li a {
-            text-decoration: none;
-            color: #3498db;
+        .sidebar li.folder {
+            font-weight: bold;
             cursor: pointer;
+            margin-bottom: 5px;
         }
-        ul li a:hover {
-            text-decoration: underline;
+        .sidebar li.folder ul {
+            padding-left: 20px;
+            display: none;
         }
-        #markdown-container {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            background: #f9f9f9;
-            position: relative;
+        .sidebar li.folder.open ul {
+            display: block;
         }
-        #markdown-container img {
-            max-width: 100%;
-            height: auto;
-        }
-        #markdown-container table {
+        table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
         }
-        #markdown-container table, 
-        #markdown-container th, 
-        #markdown-container td {
+        table th, table td {
             border: 1px solid #ddd;
-        }
-        #markdown-container th, 
-        #markdown-container td {
             padding: 8px;
             text-align: left;
         }
-        .folder {
-            font-weight: bold;
-            color: #000;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
+        table th {
+            background-color: #f4f4f4;
         }
-        .folder:before {
-            content: "▶";
-            margin-right: 8px;
-        }
-        .folder.open:before {
-            content: "▼";
-        }
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
+        @media screen and (max-width: 768px) {
             .sidebar, .toc-sidebar {
-                display: none;
                 width: 100%;
-                position: absolute;
-            }
-            .sidebar.active, .toc-sidebar.active {
-                display: block;
-            }
-            .toggle-button {
-                display: block;
-                background-color: #3498db;
-                color: #fff;
-                padding: 10px;
-                text-align: center;
-                cursor: pointer;
-                user-select: none;
             }
         }
     </style>
@@ -178,14 +130,18 @@
 
         async function getMarkdownTitle(filePath) {
             const content = await fetchFileContent(filePath);
-            const match = content.match(/^#\s+(.*)/m); // 첫 번째 헤더(#) 찾기
-            return match ? match[1].trim() : "Untitled";
+            const match = content.match(/^#\s+(.*)/m);
+            return match ? match[1].trim() : filePath.split("/").pop().replace(/_/g, " ");
         }
 
         async function renderMarkdown(filePath) {
             const content = await fetchFileContent(filePath);
-            const converter = new showdown.Converter();
-            markdownContainer.innerHTML = converter.makeHtml(content);
+            const processedContent = content.replace(/!\[.*?\]\((.*?)\)/g, (match, p1) => {
+                const branch = versionSelector.value;
+                return `![Image](https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${p1})`;
+            });
+            const converter = new showdown.Converter({ tables: true });
+            markdownContainer.innerHTML = converter.makeHtml(processedContent);
             renderToc(content);
         }
 
