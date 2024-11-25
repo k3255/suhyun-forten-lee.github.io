@@ -6,45 +6,70 @@
     <title>문서관리 테스트</title>
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
+        /* 공통 스타일 */
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-wrap: wrap;
+            background-color: #f9f9f9;
         }
         .sidebar, .toc-sidebar {
             width: 25%;
+            min-width: 200px;
+            max-width: 300px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
             box-sizing: border-box;
+            overflow-y: auto;
+            height: 100vh;
         }
         .content {
             flex-grow: 1;
             padding: 20px;
+            background-color: #fff;
+            overflow-y: auto;
             box-sizing: border-box;
         }
-        .sidebar ul {
+        ul {
             list-style: none;
-            padding-left: 0;
+            padding: 0;
+            margin: 0;
         }
-        .sidebar li.folder {
+        li {
+            margin: 5px 0;
+        }
+        .folder {
             font-weight: bold;
             cursor: pointer;
-            margin-bottom: 5px;
         }
-        .sidebar li.folder ul {
-            padding-left: 20px;
+        .folder::before {
+            content: '▶';
+            margin-right: 5px;
+            display: inline-block;
+            transition: transform 0.2s ease-in-out;
+        }
+        .folder.open::before {
+            transform: rotate(90deg);
+        }
+        .folder ul {
+            margin-left: 20px;
             display: none;
         }
-        .sidebar li.folder.open ul {
+        .folder.open ul {
             display: block;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         }
         table th, table td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 10px;
             text-align: left;
         }
         table th {
@@ -52,6 +77,11 @@
         }
         @media screen and (max-width: 768px) {
             .sidebar, .toc-sidebar {
+                width: 100%;
+                height: auto;
+                box-shadow: none;
+            }
+            .content {
                 width: 100%;
             }
         }
@@ -107,7 +137,7 @@
                 const isTargetLanguage = selectedLanguage === "ko" 
                     ? item.path.endsWith("_ko.md") 
                     : item.path.endsWith(".md") && !item.path.endsWith("_ko.md");
-                return isTargetLanguage && !item.path.startsWith(".github") && !item.path.startsWith("root");
+                return isTargetLanguage && !item.path.startsWith("root/") && !item.path.startsWith("docs/");
             });
 
             const folders = {};
@@ -138,7 +168,9 @@
             const content = await fetchFileContent(filePath);
             const processedContent = content.replace(/!\[.*?\]\((.*?)\)/g, (match, p1) => {
                 const branch = versionSelector.value;
-                return `![Image](https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${p1})`;
+                // 수정: 이미지 경로를 상대경로로 변환하여 GitHub URL로 처리
+                const imageUrl = p1.startsWith("http") ? p1 : `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${p1}`;
+                return `![Image](${imageUrl})`;
             });
             const converter = new showdown.Converter({ tables: true });
             markdownContainer.innerHTML = converter.makeHtml(processedContent);
@@ -212,21 +244,27 @@
             }
         }
 
-        async function init() {
+        async function initialize() {
             const branches = await fetchBranches();
-            const defaultBranch = branches[0].name;
-            versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join("");
-            versionSelector.value = defaultBranch;
-
-            languageSelector.addEventListener("change", async () => {
-                selectedLanguage = languageSelector.value;
-                await populateDocumentList(defaultBranch);
+            versionSelector.innerHTML = "";
+            branches.forEach(branch => {
+                const option = document.createElement("option");
+                option.value = branch.name;
+                option.textContent = branch.name;
+                versionSelector.appendChild(option);
             });
 
-            await populateDocumentList(defaultBranch);
+            versionSelector.addEventListener("change", () => populateDocumentList(versionSelector.value));
+            languageSelector.addEventListener("change", () => {
+                selectedLanguage = languageSelector.value;
+                populateDocumentList(versionSelector.value);
+            });
+
+            versionSelector.value = branches[0].name;
+            await populateDocumentList(branches[0].name);
         }
 
-        init();
+        initialize();
     </script>
 </body>
 </html>
