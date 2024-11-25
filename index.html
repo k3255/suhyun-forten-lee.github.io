@@ -318,7 +318,7 @@
             const branches = await fetchBranches();
             const defaultBranch = branches.length > 0 ? branches[0].name : "";
             if (defaultBranch) {
-                populateDocumentList(defaultBranch);
+                populateDocumentList(defaultBranch, selectedLanguage);
                 versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join('');
                 versionSelector.addEventListener("change", () => {
                     populateDocumentList(versionSelector.value, selectedLanguage);
