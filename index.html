@@ -99,7 +99,16 @@
                 left: 10px;
                 z-index: 1000;
             }
+            .toggle-button.toc {
+                top: 10px;
+                left: 10px;
+            }
+            .toggle-button.documents {
+                top: 50px;
+                left: 10px;
+            }
         }
+
         @media (min-width: 769px) {
             body {
                 flex-direction: row;
@@ -115,20 +124,21 @@
     </style>
 </head>
 <body>
-    <div class="toggle-button" onclick="toggleSidebar('sidebar')">☰ Documents</div>
+    <div class="toggle-button documents" onclick="toggleSidebar('sidebar')">☰ Documents</div>
+
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
         <h2>Documents</h2>
         <ul id="document-list"></ul>
     </div>
-
     <div class="content">
         <h1>문서관리 테스트</h1>
         <div id="markdown-container">문서를 선택해주세요</div>
     </div>
 
-    <div class="toggle-button" onclick="toggleSidebar('toc-sidebar')">☰ Table of Contents</div>
+    <div class="toggle-button toc" onclick="toggleSidebar('toc-sidebar')">☰ Table of Contents</div>
+
     <div class="toc-sidebar">
         <h2>목차</h2>
         <ul id="toc-list"></ul>
@@ -238,13 +248,13 @@
                 })
                 .catch(error => {
                     console.error('Error loading markdown:', error);
-                    markdownContainer.textContent = 'Failed to load documentation.';
+                    markdownContainer.textContent = 'Failed to load the content.';
                 });
         }
 
         function generateTOC() {
+            const headings = markdownContainer.querySelectorAll("h2, h3, h4, h5, h6");
             tocList.innerHTML = "";
-            const headings = markdownContainer.querySelectorAll("h1, h2, h3, h4, h5, h6");
             headings.forEach(heading => {
                 const tocItem = document.createElement("li");
                 const tocLink = document.createElement("a");
