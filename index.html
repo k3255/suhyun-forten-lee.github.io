@@ -73,7 +73,6 @@
             text-align: left;
         }
 
-        /* Responsive Styles */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -82,10 +81,10 @@
                 height: auto;
                 position: relative;
                 width: 100%;
-                display: none; /* Hidden by default */
+                display: none;
             }
             .sidebar.active, .toc-sidebar.active {
-                display: block; /* Show when active */
+                display: block;
             }
             .toggle-button {
                 display: block;
@@ -102,7 +101,7 @@
                 flex-direction: row;
             }
             .toggle-button {
-                display: none; /* Hidden on larger screens */
+                display: none;
             }
             .sidebar, .toc-sidebar {
                 display: block;
@@ -122,12 +121,12 @@
 
     <div class="content">
         <h1>문서관리 테스트</h1>
-        <div id="markdown-container">Please select a document from the list.</div>
+        <div id="markdown-container">문서를 선택해주세요</div>
     </div>
 
     <div class="toggle-button" onclick="toggleSidebar('toc-sidebar')">☰ Table of Contents</div>
     <div class="toc-sidebar">
-        <h2>Table of Contents</h2>
+        <h2>목차</h2>
         <ul id="toc-list"></ul>
     </div>
 
