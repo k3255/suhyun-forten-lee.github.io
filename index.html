@@ -23,9 +23,6 @@
             flex: 1;
             padding: 20px;
         }
-        .toc-sidebar {
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-        }
         h1 {
             color: #2c3e50;
         }
@@ -231,7 +228,7 @@
                 folderLi.classList.add("folder");
 
                 const folderLink = document.createElement("a");
-                folderLink.textContent = folder;
+                folderLink.textContent = folder.split("/").pop();
                 folderLink.href = "#";
                 folderLink.onclick = (e) => {
                     e.preventDefault();
@@ -248,10 +245,12 @@
                     const fileLink = document.createElement("a");
                     fileLink.textContent = file.path.split("/").pop().replace(/_/g, " ");
                     fileLink.href = `#${file.path}`;
-                    fileLink.onclick = async () => {
-                        const title = await fetchFileTitle(selectedBranch, file.path);
-                        markdownContainer.innerHTML = `<h2>${title}</h2><div>${marked.parse(await fetchFileContent(file.path))}</div>`;
+                    fileLink.onclick = async (e) => {
+                        e.preventDefault();
+                        const content = await fetchFileContent(file.path);
+                        markdownContainer.innerHTML = content;
                     };
+                    fileLi.appendChild(fileLink);
                     subList.appendChild(fileLi);
                 });
 
@@ -263,6 +262,20 @@
                 const folderLi = createFolderElement(folder, fileMap[folder]);
                 documentList.appendChild(folderLi);
             });
+        }
+
+        async function fetchFileContent(filePath) {
+            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${filePath}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch file content: ${response.status}`);
+                const content = await response.text();
+                const converter = new showdown.Converter();
+                return converter.makeHtml(content);
+            } catch (error) {
+                console.error(`Error fetching file content: ${filePath}`, error);
+                return 'Failed to load file content.';
+            }
         }
 
         async function populateDocumentList(branch) {
@@ -280,10 +293,16 @@
 
             languageSelector.addEventListener('change', (e) => {
                 selectedLanguage = e.target.value;
+                populateDocumentList(defaultBranch);
             });
         }
 
         init();
+
+        function toggleSidebar(sidebar) {
+            const sidebarElement = document.querySelector(`.${sidebar}`);
+            sidebarElement.classList.toggle('active');
+        }
     </script>
 </body>
 </html>
