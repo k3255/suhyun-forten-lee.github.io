@@ -128,6 +128,11 @@
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
+        <h2>Language</h2>
+        <select id="language-selector">
+            <option value="en">English</option>
+            <option value="ko">한글</option>
+        </select>
         <h2>Documents</h2>
         <ul id="document-list"></ul>
     </div>
@@ -151,6 +156,8 @@
         const markdownContainer = document.getElementById("markdown-container");
         const tocList = document.getElementById("toc-list");
         const versionSelector = document.getElementById("version-selector");
+        const languageSelector = document.getElementById("language-selector");
+        let selectedLanguage = "en";
 
         async function fetchBranches() {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
@@ -165,7 +172,7 @@
             }
         }
 
-        async function fetchMarkdownFiles(branch) {
+        async function fetchMarkdownFiles2(branch) {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${branch}?recursive=1`;
             try {
                 const response = await fetch(url);
@@ -182,6 +189,26 @@
                 return [];
             }
         }
+
+        async function fetchMarkdownFiles(branch, language) {
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${branch}?recursive=1`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch files: ${response.status}`);
+                const data = await response.json();
+                
+                return data.tree.filter(item =>
+                    item.type === "blob" &&
+                    item.path.endsWith(".md") &&
+                    item.path.startsWith("docs/") &&
+                    ((language === "ko" && item.path.includes("_ko.md")) || (language === "en" && !item.path.includes("_ko.md")))
+                );
+            } catch (error) {
+                console.error('Error fetching markdown files:', error);
+                return [];
+            }
+        }
+
 
         async function fetchFileTitle(branch, filePath) {
             const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
@@ -205,7 +232,7 @@
             }
         }
 
-        async function populateDocumentList(branch) {
+        async function populateDocumentList2(branch) {
             documentList.innerHTML = "";
             const files = await fetchMarkdownFiles(branch);
 
@@ -220,6 +247,23 @@
                 documentList.appendChild(fileLi);
             }
         }
+
+        async function populateDocumentList(branch, language) {
+            documentList.innerHTML = "";
+            const files = await fetchMarkdownFiles(branch, language);
+        
+            for (const file of files) {
+                const fileTitle = await fetchFileTitle(branch, file.path);
+                const fileLi = document.createElement("li");
+                const fileLink = document.createElement("a");
+                fileLink.textContent = fileTitle;
+                fileLink.href = "#";
+                fileLink.addEventListener("click", () => loadMarkdown(branch, file.path));
+                fileLi.appendChild(fileLink);
+                documentList.appendChild(fileLi);
+            }
+        }
+
 
         function loadMarkdown(branch, file) {
             const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
@@ -276,6 +320,9 @@
             if (defaultBranch) {
                 populateDocumentList(defaultBranch);
                 versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join('');
+                versionSelector.addEventListener("change", () => {
+                    populateDocumentList(versionSelector.value, selectedLanguage);
+                });
             }
         }
 
