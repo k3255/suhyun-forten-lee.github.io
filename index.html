@@ -9,105 +9,145 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
             display: flex;
-            flex-wrap: wrap;
-            background-color: #f9f9f9;
+            flex-direction: column;
         }
         .sidebar, .toc-sidebar {
-            width: 25%;
-            min-width: 250px;
-            max-width: 300px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #f4f4f4;
             padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
             height: 100vh;
+            overflow-y: auto;
         }
         .content {
-            flex-grow: 1;
+            flex: 1;
             padding: 20px;
-            background-color: #fff;
-            overflow-y: auto;
-            box-sizing: border-box;
+        }
+        .toc-sidebar {
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
         }
         ul {
-            list-style: none;
+            list-style-type: none;
             padding: 0;
-            margin: 0;
         }
-        li {
-            margin: 5px 0;
+        ul li {
+            margin: 10px 0;
         }
-        .folder {
-            font-weight: bold;
+        ul li a {
+            text-decoration: none;
+            color: #3498db;
             cursor: pointer;
         }
-        .folder::before {
-            content: '▶';
-            margin-right: 5px;
-            display: inline-block;
-            transition: transform 0.2s ease-in-out;
+        ul li a:hover {
+            text-decoration: underline;
         }
-        .folder.open::before {
-            transform: rotate(90deg);
+        #markdown-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background: #f9f9f9;
         }
-        .folder ul {
-            margin-left: 20px;
-            display: none;
-        }
-        .folder.open ul {
+        #markdown-container img {
+            max-width: 100%;
+            height: auto;
             display: block;
+            margin: 10px 0;
         }
-        table {
+        #markdown-container table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         }
-        table th, table td {
+        #markdown-container table, 
+        #markdown-container th, 
+        #markdown-container td {
             border: 1px solid #ddd;
-            padding: 10px;
+        }
+        #markdown-container th, 
+        #markdown-container td {
+            padding: 8px;
             text-align: left;
         }
-        table th {
-            background-color: #f4f4f4;
-        }
-        @media screen and (max-width: 768px) {
-            .sidebar, .toc-sidebar {
-                width: 100%;
-                height: auto;
-                box-shadow: none;
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
             }
-            .content {
+            .sidebar, .toc-sidebar {
+                height: auto;
+                position: relative;
                 width: 100%;
+                display: none;
+            }
+            .sidebar.active, .toc-sidebar.active {
+                display: block;
+            }
+            .toggle-button {
+                display: block;
+                background-color: #3498db;
+                color: #fff;
+                padding: 10px;
+                text-align: center;
+                cursor: pointer;
+                user-select: none;
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 1000;
+            }
+            .toggle-button.toc {
+                top: 10px;
+                left: 10px;
+            }
+            .toggle-button.documents {
+                top: 50px;
+                left: 10px;
+            }
+        }
+
+        /* 데스크탑 화면에서의 스타일 */
+        @media (min-width: 769px) {
+            body {
+                flex-direction: row;
+            }
+            .toggle-button {
+                display: none;
+            }
+            .sidebar, .toc-sidebar {
+                display: block;
+                width: 300px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Documents 토글 버튼 -->
+    <div class="toggle-button documents" onclick="toggleSidebar('sidebar')">☰ Documents</div>
+
+    <!-- Sidebar for documents -->
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
-
-        <h2>Language</h2>
-        <select id="language-selector">
-            <option value="en">English</option>
-            <option value="ko">한글</option>
-        </select>
-
         <h2>Documents</h2>
         <ul id="document-list"></ul>
     </div>
 
+    <!-- Main content area -->
     <div class="content">
-        <h1>문서 관리 테스트</h1>
-        <div id="markdown-container">문서를 선택하세요</div>
+        <h1>문서관리 테스트</h1>
+        <div id="markdown-container">문서를 선택해주세요</div>
     </div>
 
+    <!-- Table of Contents 토글 버튼 -->
+    <div class="toggle-button toc" onclick="toggleSidebar('toc-sidebar')">☰ Table of Contents</div>
+
+    <!-- Sidebar for Table of Contents -->
     <div class="toc-sidebar">
-        <h2>Table of Contents</h2>
+        <h2>목차</h2>
         <ul id="toc-list"></ul>
     </div>
 
@@ -118,153 +158,135 @@
         const markdownContainer = document.getElementById("markdown-container");
         const tocList = document.getElementById("toc-list");
         const versionSelector = document.getElementById("version-selector");
-        const languageSelector = document.getElementById("language-selector");
-
-        let selectedLanguage = "en";
 
         async function fetchBranches() {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
-            const response = await fetch(url);
-            return await response.json();
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch branches: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching branches:', error);
+                markdownContainer.textContent = 'Failed to load branch information.';
+                return [];
+            }
         }
 
         async function fetchMarkdownFiles(branch) {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${branch}?recursive=1`;
-            const response = await fetch(url);
-            const data = await response.json();
-            const mdFiles = data.tree.filter(item => {
-                const isTargetLanguage = selectedLanguage === "ko" 
-                    ? item.path.endsWith("_ko.md") 
-                    : item.path.endsWith(".md") && !item.path.endsWith("_ko.md");
-                // root와 .github 디렉토리 제외
-                return isTargetLanguage && !item.path.startsWith("root/") && !item.path.startsWith("docs/") && !item.path.startsWith("./github/") && !item.path.includes("/root/") && !item.path.includes("/.github/");
-            });
-        
-            const folders = {};
-            mdFiles.forEach(item => {
-                const parts = item.path.split("/");
-                const folder = parts.slice(0, -1).join("/");
-                if (!folders[folder]) folders[folder] = [];
-                folders[folder].push(item);
-            });
-        
-            return Object.entries(folders).filter(([_, files]) => files.length > 0);
-        }
-
-
-        async function fetchFileContent(filePath) {
-            const branch = versionSelector.value;
-            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
-            const response = await fetch(url);
-            return await response.text();
-        }
-
-        async function getMarkdownTitle(filePath) {
-            const content = await fetchFileContent(filePath);
-            const match = content.match(/^#\s+(.*)/m);
-            return match ? match[1].trim() : filePath.split("/").pop().replace(/_/g, " ");
-        }
-
-        async function renderMarkdown(filePath) {
-            const content = await fetchFileContent(filePath);
-            const processedContent = content.replace(/!\[.*?\]\((.*?)\)/g, (match, p1) => {
-                const branch = versionSelector.value;
-                // 수정: 이미지 경로를 상대경로로 변환하여 GitHub URL로 처리
-                const imageUrl = p1.startsWith("http") ? p1 : `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${p1}`;
-                return `![Image](${imageUrl})`;
-            });
-            const converter = new showdown.Converter({ tables: true });
-            markdownContainer.innerHTML = converter.makeHtml(processedContent);
-            renderToc(content);
-        }
-
-        function renderToc(content) {
-            tocList.innerHTML = "";
-            const lines = content.split("\n");
-            lines.forEach((line, index) => {
-                const match = line.match(/^(#{1,6})\s+(.*)/);
-                if (match) {
-                    const [, hashes, title] = match;
-                    const li = document.createElement("li");
-                    li.style.marginLeft = `${(hashes.length - 1) * 20}px`;
-
-                    const link = document.createElement("a");
-                    link.textContent = title;
-                    link.href = `#section-${index}`;
-                    link.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        document.getElementById(`section-${index}`).scrollIntoView({ behavior: "smooth" });
-                    });
-
-                    li.appendChild(link);
-                    tocList.appendChild(li);
-
-                    const section = document.createElement("div");
-                    section.id = `section-${index}`;
-                    section.style.marginTop = "-60px";
-                    section.style.paddingTop = "60px";
-                    markdownContainer.appendChild(section);
-                }
-            });
-        }
-
-        async function populateDocumentList(branch) {
-            const folders = await fetchMarkdownFiles(branch);
-            documentList.innerHTML = "";
-
-            for (const [folder, files] of folders) {
-                const folderLi = document.createElement("li");
-                folderLi.classList.add("folder");
-                folderLi.textContent = folder || "Root";
-                folderLi.addEventListener("click", () => {
-                    const subList = folderLi.querySelector("ul");
-                    const isOpen = subList.style.display === "block";
-                    subList.style.display = isOpen ? "none" : "block";
-                    folderLi.classList.toggle("open", !isOpen);
-                });
-
-                const subList = document.createElement("ul");
-                subList.style.display = "none";
-
-                for (const file of files) {
-                    const fileTitle = await getMarkdownTitle(file.path);
-                    const fileLi = document.createElement("li");
-                    const fileLink = document.createElement("a");
-                    fileLink.textContent = fileTitle;
-                    fileLink.href = "#";
-                    fileLink.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        renderMarkdown(file.path);
-                    });
-                    fileLi.appendChild(fileLink);
-                    subList.appendChild(fileLi);
-                }
-
-                folderLi.appendChild(subList);
-                documentList.appendChild(folderLi);
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch files: ${response.status}`);
+                const data = await response.json();
+                return data.tree.filter(item =>
+                    item.type === "blob" &&
+                    item.path.endsWith(".md") &&
+                    item.path.startsWith("docs/")
+                );
+            } catch (error) {
+                console.error('Error fetching markdown files:', error);
+                markdownContainer.textContent = 'Failed to load file information.';
+                return [];
             }
         }
 
-        async function initialize() {
-            const branches = await fetchBranches();
-            branches.forEach(branch => {
-                const option = document.createElement("option");
-                option.value = branch.name;
-                option.textContent = branch.name;
-                versionSelector.appendChild(option);
-            });
-
-            versionSelector.addEventListener("change", () => populateDocumentList(versionSelector.value));
-            languageSelector.addEventListener("change", () => {
-                selectedLanguage = languageSelector.value;
-                populateDocumentList(versionSelector.value);
-            });
-
-            versionSelector.value = branches[0].name;
-            await populateDocumentList(branches[0].name);
+        async function fetchFileTitle(branch, filePath) {
+            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
+                const content = await response.text();
+                const titleMatch = content.match(/^#\s(.+)/m);
+                let title = titleMatch ? titleMatch[1] : decodeURIComponent(filePath.split("/").pop().replace(/\.md$/i, "").replace(/_/g, " "));
+                if (filePath.toLowerCase().includes("_ko")) {
+                    title = title.replace(/_ko/i, "").trim() + " (한글)";
+                }
+                return title;
+            } catch (error) {
+                console.error(`Error fetching file title (${filePath}):`, error);
+                let title = decodeURIComponent(filePath.split("/").pop().replace(/\.md$/i, "").replace(/_/g, " "));
+                if (filePath.toLowerCase().includes("_ko")) {
+                    title = title.replace(/_ko/i, "").trim() + " (한글)";
+                }
+                return title;
+            }
         }
 
-        initialize();
+        async function populateDocumentList(branch) {
+            documentList.innerHTML = "";
+            const files = await fetchMarkdownFiles(branch);
+
+            for (const file of files) {
+                const fileTitle = await fetchFileTitle(branch, file.path);
+                const fileLi = document.createElement("li");
+                const fileLink = document.createElement("a");
+                fileLink.textContent = fileTitle;
+                fileLink.href = "#";
+                fileLink.addEventListener("click", () => loadMarkdown(branch, file.path));
+                fileLi.appendChild(fileLink);
+                documentList.appendChild(fileLi);
+            }
+        }
+
+        function loadMarkdown(branch, file) {
+            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
+            markdownContainer.textContent = 'Loading...';
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Failed to load markdown: ${response.status}`);
+                    return response.text();
+                })
+                .then(md => {
+                    const converter = new showdown.Converter({ tables: true });
+                    const html = converter.makeHtml(md);
+                    markdownContainer.innerHTML = html;
+
+                    const images = markdownContainer.querySelectorAll("img");
+                    images.forEach(img => {
+                        const src = img.getAttribute("src");
+                        if (src && !src.startsWith("http")) {
+                            const fullPath = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file.substring(0, file.lastIndexOf("/") + 1)}${src}`;
+                            img.setAttribute("src", fullPath);
+                        }
+                    });
+
+                    generateTOC();
+                })
+                .catch(error => {
+                    console.error('Error loading markdown:', error);
+                    markdownContainer.textContent = 'Failed to load the content.';
+                });
+        }
+
+        function generateTOC() {
+            const headings = markdownContainer.querySelectorAll("h2, h3, h4, h5, h6");
+            tocList.innerHTML = "";
+            headings.forEach(heading => {
+                const tocItem = document.createElement("li");
+                const tocLink = document.createElement("a");
+                tocLink.textContent = heading.textContent;
+                tocLink.href = `#${heading.id}`;
+                tocItem.appendChild(tocLink);
+                tocList.appendChild(tocItem);
+            });
+        }
+
+        function toggleSidebar(sidebar) {
+            const element = document.querySelector(`.${sidebar}`);
+            element.classList.toggle("active");
+        }
+
+        async function init() {
+            const branches = await fetchBranches();
+            const defaultBranch = branches.length > 0 ? branches[0].name : "";
+            if (defaultBranch) {
+                populateDocumentList(defaultBranch);
+                versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join('');
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
