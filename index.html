@@ -10,9 +10,9 @@
             font-family: Arial, sans-serif;
             margin: 0;
             display: flex;
+            flex-direction: column;
         }
-        .sidebar {
-            width: 300px;
+        .sidebar, .toc-sidebar {
             background-color: #f4f4f4;
             padding: 20px;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -24,12 +24,7 @@
             padding: 20px;
         }
         .toc-sidebar {
-            width: 300px;
-            background-color: #f9f9f9;
-            padding: 20px;
             box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-            height: 100vh;
-            overflow-y: auto;
         }
         h1 {
             color: #2c3e50;
@@ -77,19 +72,60 @@
             padding: 8px;
             text-align: left;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar, .toc-sidebar {
+                height: auto;
+                position: relative;
+                width: 100%;
+                display: none; /* Hidden by default */
+            }
+            .sidebar.active, .toc-sidebar.active {
+                display: block; /* Show when active */
+            }
+            .toggle-button {
+                display: block;
+                background-color: #3498db;
+                color: #fff;
+                padding: 10px;
+                text-align: center;
+                cursor: pointer;
+                user-select: none;
+            }
+        }
+        @media (min-width: 769px) {
+            body {
+                flex-direction: row;
+            }
+            .toggle-button {
+                display: none; /* Hidden on larger screens */
+            }
+            .sidebar, .toc-sidebar {
+                display: block;
+                width: 300px;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="toggle-button" onclick="toggleSidebar('sidebar')">☰ Documents</div>
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
         <h2>Documents</h2>
         <ul id="document-list"></ul>
     </div>
+
     <div class="content">
         <h1>문서관리 테스트</h1>
         <div id="markdown-container">Please select a document from the list.</div>
     </div>
+
+    <div class="toggle-button" onclick="toggleSidebar('toc-sidebar')">☰ Table of Contents</div>
     <div class="toc-sidebar">
         <h2>Table of Contents</h2>
         <ul id="toc-list"></ul>
@@ -155,7 +191,6 @@
                 return title;
             }
         }
-
 
         async function populateDocumentList(branch) {
             documentList.innerHTML = "";
