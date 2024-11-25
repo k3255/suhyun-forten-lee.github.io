@@ -33,6 +33,13 @@
             list-style-type: none;
             padding: 0;
         }
+        ul ul {
+            padding-left: 20px;
+        }
+        ul ul ul {
+            padding-left: 20px;
+        }
+
         ul li {
             margin: 10px 0;
         }
@@ -44,7 +51,54 @@
         ul li a:hover {
             text-decoration: underline;
         }
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+        }
+        .scroll-top-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+        }
+
+        .tab-button {
+        padding: 10px 20px;
+        margin: 0 5px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        background-color: #f5f5f5;
+        transition: background-color 0.3s;
+        }
+
+        .tab-button.active {
+        background-color: #007bff;
+        color: white;
+        }
+
+        .tab-button:hover {
+        background-color: #e9e9e9;
+        }
+
         #markdown-container {
+        padding: 20px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        margin-top: 20px;
+        }
+        #markdown-container3 {
             margin-top: 20px;
             border: 1px solid #ddd;
             padding: 20px;
@@ -124,7 +178,7 @@
 </head>
 <body>
     <div class="toggle-button documents" onclick="toggleSidebar('sidebar')">☰ Documents</div>
-
+      
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
@@ -138,6 +192,11 @@
     </div>
 
     <div class="content">
+        <div class="tabs">
+            <button class="tab-button active" onclick="loadMarkdownTab('did-doc-architecture')">did-doc-architecture</button>
+            <button class="tab-button" onclick="loadMarkdownTab('did-ca-aos')">did-ca-aos</button>
+        </div>
+          
         <h1>문서관리 테스트</h1>
         <div id="markdown-container">문서를 선택해주세요</div>
     </div>
@@ -148,16 +207,30 @@
         <h2>목차</h2>
         <ul id="toc-list"></ul>
     </div>
-
+    <button id="scrollTopBtn" class="scroll-top-btn">↑</button>
     <script>
         const repoOwner = "OmniOneID";
-        const repoName = "did-doc-architecture";
+        let repoName = "did-doc-architecture";
         const documentList = document.getElementById("document-list");
         const markdownContainer = document.getElementById("markdown-container");
         const tocList = document.getElementById("toc-list");
         const versionSelector = document.getElementById("version-selector");
         const languageSelector = document.getElementById("language-selector");
         let selectedLanguage = "en";
+
+        window.onscroll = function () {
+            const button = document.getElementById("scrollTopBtn");
+
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                button.style.display = "block";
+            } else {
+                button.style.display = "none";
+            }
+        };
+
+        document.getElementById("scrollTopBtn").onclick = function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
         async function fetchBranches() {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
@@ -168,24 +241,6 @@
             } catch (error) {
                 console.error('Error fetching branches:', error);
                 markdownContainer.textContent = 'Failed to load branch information.';
-                return [];
-            }
-        }
-
-        async function fetchMarkdownFiles2(branch) {
-            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${branch}?recursive=1`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch files: ${response.status}`);
-                const data = await response.json();
-                return data.tree.filter(item =>
-                    item.type === "blob" &&
-                    item.path.endsWith(".md") &&
-                    item.path.startsWith("docs/")
-                );
-            } catch (error) {
-                console.error('Error fetching markdown files:', error);
-                markdownContainer.textContent = 'Failed to load file information.';
                 return [];
             }
         }
@@ -232,22 +287,6 @@
             }
         }
 
-        async function populateDocumentList2(branch) {
-            documentList.innerHTML = "";
-            const files = await fetchMarkdownFiles(branch);
-
-            for (const file of files) {
-                const fileTitle = await fetchFileTitle(branch, file.path);
-                const fileLi = document.createElement("li");
-                const fileLink = document.createElement("a");
-                fileLink.textContent = fileTitle;
-                fileLink.href = "#";
-                fileLink.addEventListener("click", () => loadMarkdown(branch, file.path));
-                fileLi.appendChild(fileLink);
-                documentList.appendChild(fileLi);
-            }
-        }
-
         async function populateDocumentList(branch, language) {
             documentList.innerHTML = "";
             const files = await fetchMarkdownFiles(branch, language);
@@ -264,7 +303,6 @@
             }
         }
 
-
         function loadMarkdown(branch, file) {
             const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
             markdownContainer.textContent = 'Loading...';
@@ -275,9 +313,47 @@
                     return response.text();
                 })
                 .then(md => {
+                    const cleanedMd = md.replace(/---\npuppeteer:[\s\S]*?---/g, '').trim();
+
+                    const bulletListMd = cleanedMd.replace(/^( {2,})(- .*)/gm, (match, spaces, bullet) => {
+                        const indent = spaces.length / 2;
+                        return `${' '.repeat(indent * 2)}${bullet}`;
+                    });
+
+                    const updatedMd = bulletListMd.replace(/^( {4})(- .*)/gm, (match, spaces, bullet) => {
+                        const indent = spaces.length / 2;
+                        return `${' '.repeat(indent * 2)}${bullet}`;
+                    });
+
+                    const nestedListsMd = updatedMd.replace(/^( {6})(- .*)/gm, (match, spaces, bullet) => {
+                        const indent = spaces.length / 2;
+                        return `${' '.repeat(indent * 2)}${bullet}`;
+                    });
+
+                    const tocUpdatedMd = nestedListsMd.replace(/\[.*?\]\(#(.*?)\)/g, (match, link) => {
+                        const cleanLink = link.replace(/-/g, "");
+                        return match.replace(`#${link}`, `#${cleanLink}`);
+                    });
+
+                    const listsWithBoldMd = tocUpdatedMd.replace(/^( {2,})(-|\d+\.) \*\*(.*?)\*\*/gm, (match, spaces, bullet, boldText) => {
+                        const indent = spaces.length / 2;
+                        return `${' '.repeat(indent * 2)}${bullet} **${boldText}**`;
+                    });
+
                     const converter = new showdown.Converter({ tables: true });
-                    const html = converter.makeHtml(md);
+                    const html = converter.makeHtml(listsWithBoldMd);
                     markdownContainer.innerHTML = html;
+
+                    const headings = markdownContainer.querySelectorAll("h1, h2, h3, h4, h5, h6");
+                    headings.forEach((heading, index) => {
+                        if (!heading.id) {
+                            const uniqueId = heading.textContent
+                                .toLowerCase()
+                                .replace(/[^a-z0-9]/g, "")
+                                .replace(/-+/g, "");
+                            heading.id = uniqueId || `heading${index}`;
+                        }
+                    });
 
                     const images = markdownContainer.querySelectorAll("img");
                     images.forEach(img => {
@@ -295,19 +371,43 @@
                     markdownContainer.textContent = 'Failed to load the content.';
                 });
         }
-        
+
+        function loadMarkdownTab(tab) {
+            if (tab === 'did-doc-architecture') {
+                repoName = 'did-doc-architecture';
+                loadMarkdown('main', 'README.md');
+            } else if (tab === 'did-ca-aos') {
+                repoName = 'did-ca-aos';
+                loadMarkdown('main', 'README.md');
+            }
+
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelector(`.tab-button[onclick="loadMarkdownTab('${tab}')"]`).classList.add('active');
+        }
+
+
         function generateTOC() {
-            const headings = markdownContainer.querySelectorAll("h2, h3, h4, h5, h6");
+            const headings = markdownContainer.querySelectorAll("h1, h2, h3, h4, h5, h6");
             tocList.innerHTML = "";
             headings.forEach(heading => {
                 const tocItem = document.createElement("li");
                 const tocLink = document.createElement("a");
+
+                const cleanId = heading.textContent
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, "")
+                    .replace(/-+/g, "");
+
+                heading.id = cleanId;
                 tocLink.textContent = heading.textContent;
-                tocLink.href = `#${heading.id}`;
+                tocLink.href = `#${cleanId}`;
                 tocItem.appendChild(tocLink);
                 tocList.appendChild(tocItem);
             });
         }
+
 
         function toggleSidebar(sidebar) {
             const element = document.querySelector(`.${sidebar}`);
