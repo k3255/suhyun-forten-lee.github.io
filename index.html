@@ -323,6 +323,10 @@
                 versionSelector.addEventListener("change", () => {
                     populateDocumentList(versionSelector.value, selectedLanguage);
                 });
+                languageSelector.addEventListener("change", () => {
+                    selectedLanguage = languageSelector.value;
+                    populateDocumentList(versionSelector.value, selectedLanguage);
+                });
             }
         }
 
