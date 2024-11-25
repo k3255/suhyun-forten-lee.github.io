@@ -265,7 +265,7 @@
         }
 
 
-        function loadMarkdown(branch, file) {
+        function loadMarkdown2(branch, file) {
             const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${file}`;
             markdownContainer.textContent = 'Loading...';
 
@@ -296,6 +296,54 @@
                 });
         }
 
+        async function loadMarkdown(branch, filePath) {
+            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to load markdown: ${response.status}`);
+                const markdown = await response.text();
+        
+                const convertedHtml = marked.parse(markdown, {
+                    headerIds: true,
+                    gfm: true
+                }).replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, src) => {
+                    const absoluteSrc = src.startsWith('http') ? src : `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${src}`;
+                    return `<img src="${absoluteSrc}" alt="${alt}" style="max-width: 100%; height: auto;">`;
+                });
+        
+                markdownDisplay.innerHTML = convertedHtml;
+
+                const headings = markdownDisplay.querySelectorAll("h1, h2, h3, h4, h5, h6");
+                const tocHtml = Array.from(headings).map(heading => {
+                    const level = parseInt(heading.tagName.substring(1), 10);
+                    const id = heading.id || heading.textContent.trim().toLowerCase().replace(/ /g, "-");
+                    heading.id = id;
+                    return `<li style="margin-left: ${level * 10}px;"><a href="#${id}">${heading.textContent}</a></li>`;
+                }).join("");
+        
+                tocList.innerHTML = tocHtml;
+        
+                tocList.querySelectorAll("a").forEach(link => {
+                    link.addEventListener("click", event => {
+                        event.preventDefault();
+                        const targetId = link.getAttribute("href").substring(1);
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            window.scrollTo({
+                                top: targetElement.offsetTop - 50,
+                                behavior: "smooth"
+                            });
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error("Error loading markdown:", error);
+                markdownDisplay.innerHTML = "<p>Failed to load the document.</p>";
+            }
+        }
+
+
+        
         function generateTOC() {
             const headings = markdownContainer.querySelectorAll("h2, h3, h4, h5, h6");
             tocList.innerHTML = "";
