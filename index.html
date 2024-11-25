@@ -136,9 +136,10 @@
                 const isTargetLanguage = selectedLanguage === "ko" 
                     ? item.path.endsWith("_ko.md") 
                     : item.path.endsWith(".md") && !item.path.endsWith("_ko.md");
-                return isTargetLanguage && !item.path.startsWith("root/") && !item.path.startsWith("docs/") && !item.path.startsWith("./github/");
+                // root와 .github 디렉토리 제외
+                return isTargetLanguage && !item.path.startsWith("root/") && !item.path.startsWith("docs/") && !item.path.startsWith("./github/") && !item.path.includes("/root/") && !item.path.includes("/.github/");
             });
-
+        
             const folders = {};
             mdFiles.forEach(item => {
                 const parts = item.path.split("/");
@@ -146,9 +147,10 @@
                 if (!folders[folder]) folders[folder] = [];
                 folders[folder].push(item);
             });
-
+        
             return Object.entries(folders).filter(([_, files]) => files.length > 0);
         }
+
 
         async function fetchFileContent(filePath) {
             const branch = versionSelector.value;
