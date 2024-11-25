@@ -94,6 +94,10 @@
                 text-align: center;
                 cursor: pointer;
                 user-select: none;
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 1000;
             }
         }
         @media (min-width: 769px) {
@@ -242,44 +246,30 @@
             tocList.innerHTML = "";
             const headings = markdownContainer.querySelectorAll("h1, h2, h3, h4, h5, h6");
             headings.forEach(heading => {
-                const level = parseInt(heading.tagName.substring(1));
-                const id = heading.textContent.toLowerCase().replace(/[^\w]+/g, "-");
-                heading.id = id;
-
-                const li = document.createElement("li");
-                li.style.marginLeft = `${(level - 1) * 20}px`;
-                const link = document.createElement("a");
-                link.textContent = heading.textContent;
-                link.href = `#${id}`;
-                link.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    heading.scrollIntoView({ behavior: "smooth" });
-                });
-                li.appendChild(link);
-                tocList.appendChild(li);
+                const tocItem = document.createElement("li");
+                const tocLink = document.createElement("a");
+                tocLink.textContent = heading.textContent;
+                tocLink.href = `#${heading.id}`;
+                tocItem.appendChild(tocLink);
+                tocList.appendChild(tocItem);
             });
         }
 
-        async function initialize() {
+        function toggleSidebar(sidebar) {
+            const element = document.querySelector(`.${sidebar}`);
+            element.classList.toggle("active");
+        }
+
+        async function init() {
             const branches = await fetchBranches();
-            if (branches.length === 0) return;
-
-            branches.forEach(branch => {
-                const option = document.createElement("option");
-                option.value = branch.name;
-                option.textContent = branch.name;
-                versionSelector.appendChild(option);
-            });
-
-            const defaultBranch = branches[0].name;
-            versionSelector.value = defaultBranch;
-            populateDocumentList(defaultBranch);
-            versionSelector.addEventListener("change", (event) => {
-                populateDocumentList(event.target.value);
-            });
+            const defaultBranch = branches.length > 0 ? branches[0].name : "";
+            if (defaultBranch) {
+                populateDocumentList(defaultBranch);
+                versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join('');
+            }
         }
 
-        initialize();
+        init();
     </script>
 </body>
 </html>
