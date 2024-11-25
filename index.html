@@ -10,7 +10,6 @@
             font-family: Arial, sans-serif;
             margin: 0;
             display: flex;
-            flex-direction: column;
         }
         .sidebar, .toc-sidebar {
             background-color: #f4f4f4;
@@ -31,7 +30,7 @@
             padding: 0;
         }
         ul li {
-            margin: 10px 0;
+            margin: 5px 0;
         }
         ul li a {
             text-decoration: none;
@@ -51,8 +50,6 @@
         #markdown-container img {
             max-width: 100%;
             height: auto;
-            display: block;
-            margin: 10px 0;
         }
         #markdown-container table {
             width: 100%;
@@ -71,29 +68,26 @@
         }
         .folder {
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            cursor: pointer;
         }
         .folder:before {
             content: "▶";
             margin-right: 8px;
-            font-size: 14px;
         }
         .folder.open:before {
             content: "▼";
         }
-
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
             }
             .sidebar, .toc-sidebar {
-                height: auto;
-                position: relative;
-                width: 100%;
                 display: none;
+                width: 100%;
+                position: absolute;
             }
             .sidebar.active, .toc-sidebar.active {
                 display: block;
@@ -106,38 +100,11 @@
                 text-align: center;
                 cursor: pointer;
                 user-select: none;
-                position: fixed;
-                top: 10px;
-                left: 10px;
-                z-index: 1000;
-            }
-            .toggle-button.toc {
-                top: 10px;
-                left: 10px;
-            }
-            .toggle-button.documents {
-                top: 50px;
-                left: 10px;
-            }
-        }
-
-        @media (min-width: 769px) {
-            body {
-                flex-direction: row;
-            }
-            .toggle-button {
-                display: none;
-            }
-            .sidebar, .toc-sidebar {
-                display: block;
-                width: 300px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="toggle-button documents" onclick="toggleSidebar('sidebar')">☰ Documents</div>
-
     <div class="sidebar">
         <h2>Version</h2>
         <select id="version-selector"></select>
@@ -153,14 +120,12 @@
     </div>
 
     <div class="content">
-        <h1>문서관리 테스트</h1>
-        <div id="markdown-container">문서를 선택해주세요</div>
+        <h1>문서 관리 테스트</h1>
+        <div id="markdown-container">문서를 선택하세요</div>
     </div>
 
-    <div class="toggle-button toc" onclick="toggleSidebar('toc-sidebar')">☰ Table of Contents</div>
-
     <div class="toc-sidebar">
-        <h2>목차</h2>
+        <h2>Table of Contents</h2>
         <ul id="toc-list"></ul>
     </div>
 
@@ -173,147 +138,116 @@
         const versionSelector = document.getElementById("version-selector");
         const languageSelector = document.getElementById("language-selector");
 
-        let selectedLanguage = 'en';
+        let selectedLanguage = "en";
 
         async function fetchBranches() {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch branches: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error('Error fetching branches:', error);
-                markdownContainer.textContent = 'Failed to load branch information.';
-                return [];
-            }
+            const response = await fetch(url);
+            return await response.json();
         }
 
         async function fetchMarkdownFiles(branch) {
             const url = `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${branch}?recursive=1`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch files: ${response.status}`);
-                const data = await response.json();
-                return data.tree.filter(item =>
-                    item.type === "blob" &&
-                    ((selectedLanguage === 'ko' && item.path.endsWith("_ko.md")) || 
-                    (selectedLanguage === 'en' && item.path.endsWith(".md") && !item.path.endsWith("_ko.md")))
-                );
-            } catch (error) {
-                console.error('Error fetching markdown files:', error);
-                markdownContainer.textContent = 'Failed to load file information.';
-                return [];
-            }
-        }
-
-        async function fetchFileTitle(branch, filePath) {
-            const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
-                const content = await response.text();
-                const titleMatch = content.match(/^#\s(.+)/m);
-                let title = titleMatch ? titleMatch[1] : decodeURIComponent(filePath.split("/").pop().replace(/\.md$/i, "").replace(/_/g, " "));
-                return title;
-            } catch (error) {
-                console.error(`Error fetching file title (${filePath}):`, error);
-                return decodeURIComponent(filePath.split("/").pop().replace(/\.md$/i, "").replace(/_/g, " "));
-            }
-        }
-
-        function createFolderTree(files) {
-            const fileMap = {};
-
-            files.forEach(file => {
-                const folder = file.path.substring(0, file.path.lastIndexOf("/"));
-                if (!fileMap[folder]) {
-                    fileMap[folder] = [];
-                }
-                fileMap[folder].push(file);
-            });
-
-            const createFolderElement = (folder, files) => {
-                const folderLi = document.createElement("li");
-                folderLi.classList.add("folder");
-
-                const folderLink = document.createElement("a");
-                folderLink.textContent = folder.split("/").pop();
-                folderLink.href = "#";
-                folderLink.onclick = (e) => {
-                    e.preventDefault();
-                    folderLi.classList.toggle("open");
-                    const subList = folderLi.querySelector("ul");
-                    subList.style.display = subList.style.display === "none" ? "block" : "none";
-                };
-                folderLi.appendChild(folderLink);
-
-                const subList = document.createElement("ul");
-                subList.style.display = "none";
-
-                files.forEach(file => {
-                    const fileLi = document.createElement("li");
-                    const fileLink = document.createElement("a");
-                    fileLink.textContent = file.path.split("/").pop().replace(/_/g, " ");
-                    fileLink.href = `#${file.path}`;
-                    fileLink.onclick = async (e) => {
-                        e.preventDefault();
-                        const content = await fetchFileContent(file.path);
-                        markdownContainer.innerHTML = content;
-                    };
-                    fileLi.appendChild(fileLink);
-                    subList.appendChild(fileLi);
-                });
-
-                folderLi.appendChild(subList);
-                return folderLi;
-            };
-
-            Object.keys(fileMap).forEach(folder => {
-                const folderLi = createFolderElement(folder, fileMap[folder]);
-                documentList.appendChild(folderLi);
+            const response = await fetch(url);
+            const data = await response.json();
+            return data.tree.filter(item => {
+                const isFolder = !item.path.includes(".");
+                const isTargetLanguage = selectedLanguage === "ko" 
+                    ? item.path.endsWith("_ko.md") 
+                    : item.path.endsWith(".md") && !item.path.endsWith("_ko.md");
+                return isFolder || isTargetLanguage;
             });
         }
 
         async function fetchFileContent(filePath) {
             const branch = versionSelector.value;
             const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch file content: ${response.status}`);
-                const content = await response.text();
-                const converter = new showdown.Converter();
-                return converter.makeHtml(content);
-            } catch (error) {
-                console.error(`Error fetching file content: ${filePath}`, error);
-                return 'Failed to load file content.';
-            }
+            const response = await fetch(url);
+            return await response.text();
+        }
+
+        async function renderMarkdown(filePath) {
+            const content = await fetchFileContent(filePath);
+            const converter = new showdown.Converter();
+            markdownContainer.innerHTML = converter.makeHtml(content);
+            renderToc(content);
+        }
+
+        function renderToc(content) {
+            tocList.innerHTML = "";
+            const lines = content.split("\n");
+            lines.forEach(line => {
+                const match = line.match(/^(#{1,6})\s+(.*)/);
+                if (match) {
+                    const [, hashes, title] = match;
+                    const li = document.createElement("li");
+                    li.style.marginLeft = `${(hashes.length - 1) * 20}px`;
+                    li.textContent = title;
+                    tocList.appendChild(li);
+                }
+            });
         }
 
         async function populateDocumentList(branch) {
-            const markdownFiles = await fetchMarkdownFiles(branch);
-            createFolderTree(markdownFiles);
+            const files = await fetchMarkdownFiles(branch);
+            documentList.innerHTML = "";
+
+            const folderMap = {};
+
+            files.forEach(file => {
+                const parts = file.path.split("/");
+                const folder = parts.slice(0, -1).join("/");
+                if (!folderMap[folder]) folderMap[folder] = [];
+                folderMap[folder].push(file);
+            });
+
+            Object.keys(folderMap).forEach(folder => {
+                const folderLi = document.createElement("li");
+                folderLi.classList.add("folder");
+                folderLi.textContent = folder || "Root";
+                folderLi.addEventListener("click", () => {
+                    const subList = folderLi.querySelector("ul");
+                    const isOpen = subList.style.display === "block";
+                    subList.style.display = isOpen ? "none" : "block";
+                    folderLi.classList.toggle("open", !isOpen);
+                });
+
+                const subList = document.createElement("ul");
+                subList.style.display = "none";
+
+                folderMap[folder].forEach(file => {
+                    const fileLi = document.createElement("li");
+                    const fileLink = document.createElement("a");
+                    fileLink.textContent = file.path.split("/").pop();
+                    fileLink.href = "#";
+                    fileLink.addEventListener("click", async (e) => {
+                        e.preventDefault();
+                        await renderMarkdown(file.path);
+                    });
+                    fileLi.appendChild(fileLink);
+                    subList.appendChild(fileLi);
+                });
+
+                folderLi.appendChild(subList);
+                documentList.appendChild(folderLi);
+            });
         }
 
         async function init() {
             const branches = await fetchBranches();
-            const defaultBranch = branches.length > 0 ? branches[0].name : "";
-            if (defaultBranch) {
-                populateDocumentList(defaultBranch);
-                versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join('');
-            }
+            const defaultBranch = branches[0].name;
+            versionSelector.innerHTML = branches.map(branch => `<option value="${branch.name}">${branch.name}</option>`).join("");
+            versionSelector.value = defaultBranch;
 
-            languageSelector.addEventListener('change', (e) => {
-                selectedLanguage = e.target.value;
-                populateDocumentList(defaultBranch);
+            languageSelector.addEventListener("change", async () => {
+                selectedLanguage = languageSelector.value;
+                await populateDocumentList(defaultBranch);
             });
+
+            await populateDocumentList(defaultBranch);
         }
 
         init();
-
-        function toggleSidebar(sidebar) {
-            const sidebarElement = document.querySelector(`.${sidebar}`);
-            sidebarElement.classList.toggle('active');
-        }
     </script>
 </body>
 </html>
