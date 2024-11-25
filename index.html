@@ -6,7 +6,6 @@
     <title>문서관리 테스트</title>
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
-        /* 공통 스타일 */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -17,7 +16,7 @@
         }
         .sidebar, .toc-sidebar {
             width: 25%;
-            min-width: 200px;
+            min-width: 250px;
             max-width: 300px;
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -137,7 +136,7 @@
                 const isTargetLanguage = selectedLanguage === "ko" 
                     ? item.path.endsWith("_ko.md") 
                     : item.path.endsWith(".md") && !item.path.endsWith("_ko.md");
-                return isTargetLanguage && !item.path.startsWith("root/") && !item.path.startsWith("docs/");
+                return isTargetLanguage && !item.path.startsWith("root/") && !item.path.startsWith("docs/") && !item.path.startsWith("./github/");
             });
 
             const folders = {};
@@ -246,7 +245,6 @@
 
         async function initialize() {
             const branches = await fetchBranches();
-            versionSelector.innerHTML = "";
             branches.forEach(branch => {
                 const option = document.createElement("option");
                 option.value = branch.name;
