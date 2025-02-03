@@ -72,8 +72,21 @@
             flex-shrink: 0;
         }
 
-        .circle.inactive {
-            background-color: #e0e0e0;
+        .step-container:nth-child(1) .circle {
+            background-color: #ffffff;
+            color: #ed8202;
+            border: 2px solid #ed8202;
+        }
+
+        .step-container:nth-child(2) .circle {
+            background-color: #ffffff;
+            color: #ed8202;
+            border: 2px solid #ed8202;
+        }
+
+        .step-container:nth-child(3) .circle {
+            background-color: #ed8202;
+            color: #ffffff;
         }
 
         .step-body {
@@ -87,6 +100,14 @@
         }
 
         .step-container:first-child .step-body h2 {
+            color: #ed8202;
+        }
+
+        .step-container:nth-child(2) .step-body h2 {
+            color: #ed8202;
+        }
+
+        .step-container:nth-child(3) .step-body h2 {
             color: #ed8202;
         }
 
@@ -119,76 +140,18 @@
             border-radius: 5px;
             cursor: pointer;
         }
-
-        .loading-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #ed8202;
-            z-index: 999;
-        }
-
-        .progress-circle {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #ed8202;
-            border-top: 5px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .main h1 {
-                font-size: 24px;
-            }
-            .circle {
-                width: 30px;
-                height: 30px;
-                font-size: 14px;
-            }
-            .step-body {
-                font-size: 12px;
-            }
-            .button-container button {
-                padding: 10px;
-                font-size: 16px;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="mobile-container">
-        <div class="loading-screen">
-            <div class="progress-circle"></div>
-            <p>setting up your wallet.</p>
-        </div>
-
         <div class="header"></div>
         <div class="main">
             <h1>OpenDID<br>Wallet</h1>
         </div>
         <div class="footer">
-
             <div class="step-container">
                 <div class="circle">01</div>
-                <div class="step-line"></div>
+                <div class="step-line active"></div>
                 <div class="step-body">
                   <h2>Step 1</h2>
                   1. Register a demo user.<br>
@@ -197,8 +160,8 @@
             </div>
 
             <div class="step-container">
-                <div class="circle inactive">02</div>
-                <div class="step-line"></div>
+                <div class="circle">02</div>
+                <div class="step-line active"></div>
                 <div class="step-body">
                   <h2>Step 2</h2>
                   1. Register a PIN to create a signature key.<br>
@@ -227,20 +190,11 @@
         }
 
         var state = {};
-        var url = location.origin + '/step1';
+        var url = location.origin + '/step3';
         history.pushState(state, null, url);
 
-        window.addEventListener('DOMContentLoaded', function () {
-            setTimeout(() => {
-                document.querySelector('.loading-screen').style.display = 'none';
-            }, 1000);
-        });
-
         document.getElementById('next-button').addEventListener('click', function () {
-            document.cookie = "issuer_init=false; path=/; max-age=3600";
-            document.cookie = "user_init=false; path=/; max-age=3600";
-            document.cookie = "vc_result=false; path=/; max-age=3600";
-            window.location.href = 'user_info.html';
+            window.location.href = 'pin_auth.html';
         });
     </script>
 </body>

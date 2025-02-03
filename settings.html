@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List View Example</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="titlebar.js"></script>
+    <title>OpenDID Wallet</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/titlebar.js"></script>
     <style>
         body {
             margin: 0;
@@ -26,10 +26,9 @@
             border-radius: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
             overflow: hidden;
-            display: flex;
             flex-direction: column;
-            padding: 20px;
-            justify-content: flex-start;
+            justify-content: space-between;
+            position: relative;
         }
 
         .list-view {
@@ -62,15 +61,15 @@
 </head>
 <body>
     <div class="mobile-container">
-        <div class="titlebar-container"></div>
+        <div class="titlebar-backkey-container"></div>
         <ul class="list-view">
             <li class="list-item">
                 <div class="title">TAS URL</div>
                 <div class="subtitle">http://localhost:8090</div>
             </li>
             <li class="list-item">
-                <div class="title">TAS URL</div>
-                <div class="subtitle">http://localhost:8090</div>
+                <div class="title">VERIFIER URL</div>
+                <div class="subtitle">http://localhost:8092</div>
             </li>
             <li class="list-item">
                 <div class="title">DID</div>
@@ -80,6 +79,14 @@
     </div>
 
     <script>
+        window.onpopstate = function(e) { 
+            console.log(`${JSON.stringify(e.state)} | ${location.origin} | ${location.pathname}`);
+        }
+
+        var state = {};
+        var url = location.origin + '/settings';
+        history.replaceState(state, null, url);
+
         const base58Chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
         function generateBase58RandomString(length) {
@@ -91,7 +98,7 @@
         }
 
         function setDIDCookie(didValue) {
-            document.cookie = `did=${didValue}; path=/; max-age=31536000`; // 1년간 쿠키 유지
+            document.cookie = `did=${didValue}; path=/; max-age=31536000`;
         }
 
         function getDIDFromCookie() {
@@ -110,7 +117,6 @@
             return null;
         }
 
-        // 페이지 로드 시 DID 값을 확인하고 설정
         window.addEventListener('DOMContentLoaded', function () {
             let did = getDIDFromCookie();
             if (!did) {
